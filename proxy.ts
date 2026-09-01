@@ -61,6 +61,13 @@ export async function proxy(request: NextRequest) {
   const caminho = request.nextUrl.pathname;
   const ehPublica = PUBLICAS.some((p) => caminho === p || caminho.startsWith(`${p}/`));
 
+  // Nada de página de gente logada em cache compartilhado. A sessão já vive
+  // num cookie por navegador, mas isto fecha a porta para um intermediário
+  // (CDN, proxy da operadora) guardar a tela de uma pessoa e servir a outra.
+  if (user) {
+    resposta.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+  }
+
   // Rota de API nunca é redirecionada: cada handler confere o login por conta
   // própria e responde 401 em JSON. Redirecionar aqui devolveria o HTML da
   // tela de entrada, e o `fetch` do cliente quebraria ao tentar ler o JSON.

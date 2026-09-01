@@ -60,9 +60,7 @@ export default async function PaginaJardim() {
             hastes que passam da caixa de texto e cortariam a frase abaixo. */}
         <div className="flex items-center gap-3">
           <IconeFlor className="h-9 w-9 shrink-0 text-folha" />
-          <h1 className="min-w-0 font-manuscrita text-4xl leading-[1.3] break-words">
-            {titulo}
-          </h1>
+          <h1 className="titulo-jardim min-w-0">{titulo}</h1>
         </div>
         <p className="mt-2 text-sm text-suave">{SAUDACAO_ESTACAO[estacaoDoAno()]}</p>
       </header>

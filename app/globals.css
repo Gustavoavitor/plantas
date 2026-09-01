@@ -17,6 +17,16 @@
   --alerta-clara: #fbeae3;
   --atencao: #a8791f;
   --atencao-clara: #f9f1dd;
+
+  /* Violeta elétrico da referência. Entra só como brilho de fundo e no
+     realce da navegação — o verde continua sendo a cor do app. */
+  --violeta: #6d3bff;
+  --violeta-claro: #b9c7ff;
+  --brilho: 0.05;
+
+  /* Vidro: fundo translúcido das barras. */
+  --vidro: rgb(255 255 255 / 0.72);
+  --vidro-borda: rgb(31 42 34 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -34,6 +44,14 @@
     --alerta-clara: #33211b;
     --atencao: #d9b45c;
     --atencao-clara: #2d2718;
+
+    --violeta: #7c4dff;
+    --violeta-claro: #b9c7ff;
+    /* No escuro o brilho aparece mais, como na foto de referência. */
+    --brilho: 0.16;
+
+    --vidro: rgb(20 24 21 / 0.7);
+    --vidro-borda: rgb(232 236 233 / 0.08);
   }
 }
 
@@ -51,6 +69,8 @@
   --color-alerta-clara: var(--alerta-clara);
   --color-atencao: var(--atencao);
   --color-atencao-clara: var(--atencao-clara);
+  --color-violeta: var(--violeta);
+  --color-violeta-clara: var(--violeta-claro);
 
   /* rokkitt tem só os pesos 400 e 700: 500 e 600 caem para o mais próximo. */
   --font-sans: "rokkitt", var(--font-geist-sans), ui-serif, Georgia, serif;
@@ -69,10 +89,32 @@ html {
 }
 
 body {
-  background: var(--papel);
+  /* Transparente de propósito: a cor de fundo fica no <html>, senão ela
+     cobriria o brilho do ::before, que é pintado atrás do body. */
+  background: transparent;
   color: var(--tinta);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
+}
+
+/* Brilho violeta atrás do conteúdo, preso ao topo da tela. Fixo e sem
+   interação: é atmosfera, não elemento. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20% -30% auto -30%;
+  height: 70vh;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      42% 46% at 78% 12%,
+      color-mix(in oklab, var(--violeta-claro) 70%, var(--violeta)) 0%,
+      transparent 68%
+    ),
+    radial-gradient(58% 52% at 92% 34%, var(--violeta) 0%, transparent 72%);
+  opacity: var(--brilho);
+  filter: blur(28px);
 }
 
 /* Respeita o entalhe e a barra inferior do iPhone. */
@@ -145,6 +187,80 @@ button,
 
 .surgir {
   animation: surgir 180ms var(--ease-toque) both;
+}
+
+/* ------------------------------------------------------------------
+   Vidro.
+
+   `backdrop-filter` com saturação alta é o que dá a sensação de vidro
+   sobre conteúdo colorido: o que está atrás continua vivo através da
+   camada, em vez de virar cinza.
+   ------------------------------------------------------------------ */
+/* Só o fundo e a borda: o desfoque vem dos utilitários
+   `backdrop-blur-xl backdrop-saturate-150` do Tailwind. Escrever
+   `backdrop-filter` aqui não funciona — o Lightning CSS descarta a
+   declaração ao processar este arquivo. */
+.vidro {
+  background: var(--vidro);
+  border-color: var(--vidro-borda);
+}
+
+/* Sem suporte a backdrop-filter, um fundo sólido mantém a legibilidade. */
+@supports not (backdrop-filter: blur(1px)) {
+  .vidro {
+    background: var(--superficie);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Título manuscrito.
+
+   A sedgwick-ave-display tem hastes que passam bastante da caixa de
+   texto — bem mais no Safari do iOS que no Chrome. Por isso a entrelinha
+   é generosa e o tamanho é limitado: é o que impede as letras de
+   invadirem a linha de baixo e o que mantém o ícone alinhado, já que ele
+   se centraliza pela caixa e não pelo desenho da letra.
+   ------------------------------------------------------------------ */
+.titulo-jardim {
+  font-family: var(--font-manuscrita);
+  font-size: clamp(1.6rem, 6.5vw, 2.1rem);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  /* Sem isto, uma haste alta pode encostar no que estiver acima. */
+  padding-block: 0.15em;
+}
+
+/* Transição entre telas, quando o navegador suporta. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: sair-tela 140ms var(--ease-toque) both;
+}
+::view-transition-new(root) {
+  animation: entrar-tela 220ms var(--ease-toque) both;
+}
+
+@keyframes sair-tela {
+  to {
+    opacity: 0;
+    transform: scale(0.995);
+  }
+}
+
+@keyframes entrar-tela {
+  from {
+    opacity: 0;
+    transform: scale(1.005);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 input[type="text"],

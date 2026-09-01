@@ -10,9 +10,25 @@ const CORES = {
   em_dia: "border-borda bg-papel text-suave",
 } as const;
 
+/** "lírio-da-paz" como apelido e como nome comum é repetição inútil no card. */
+function mesmoTexto(a: string | null, b: string) {
+  if (!a) return false;
+  const normalizar = (v: string) =>
+    v
+      .trim()
+      .toLowerCase()
+      .replace(/[-\s]+/g, "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "");
+  return normalizar(a) === normalizar(b);
+}
+
 export default function CartaoPlanta({ planta }: { planta: Planta }) {
   const status = statusRega(planta);
   const precisa = status.status === "atrasada" || status.status === "hoje";
+
+  const secundario = planta.nome_comum ?? planta.nome_cientifico;
+  const mostrarSecundario = secundario && !mesmoTexto(secundario, planta.apelido);
 
   return (
     <li className="overflow-hidden rounded-suave border border-borda bg-superficie">
@@ -34,11 +50,9 @@ export default function CartaoPlanta({ planta }: { planta: Planta }) {
           )}
 
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">{planta.apelido}</p>
-            {(planta.nome_comum || planta.nome_cientifico) && (
-              <p className="truncate text-sm text-suave">
-                {planta.nome_comum ?? planta.nome_cientifico}
-              </p>
+            <p className="truncate font-semibold">{planta.apelido}</p>
+            {mostrarSecundario && (
+              <p className="truncate text-sm text-suave">{secundario}</p>
             )}
             <span
               className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${CORES[status.status]}`}

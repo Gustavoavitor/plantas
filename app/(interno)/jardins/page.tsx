@@ -42,7 +42,7 @@ export default async function PaginaJardins() {
   return (
     <>
       <header className="area-segura-cima pt-6 pb-5">
-        <h1 className="font-manuscrita text-4xl leading-[1.3]">Meus jardins</h1>
+        <h1 className="titulo-jardim">Meus jardins</h1>
         <p className="mt-2 text-sm text-suave">
           Um lugar para cada canto onde você tem planta.
         </p>

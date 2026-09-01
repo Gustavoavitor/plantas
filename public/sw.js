@@ -6,7 +6,8 @@
  *  2. Guarda o casco do app para ele abrir mesmo sem internet.
  */
 
-const CACHE = "plantas-v1";
+// Subir a versão descarta o cache antigo no próximo deploy.
+const CACHE = "plantas-v2";
 const ESSENCIAIS = ["/icones/icone-192.png", "/icones/icone-512.png"];
 
 self.addEventListener("install", (evento) => {
@@ -41,10 +42,18 @@ self.addEventListener("fetch", (evento) => {
   // Rotas de API e de login nunca vêm do cache.
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return;
 
+  // Navegação sempre vem da rede e NUNCA entra no cache: a página de quem
+  // está logado não pode sobrar guardada no aparelho para outra sessão.
   if (request.mode === "navigate") {
     evento.respondWith(
-      fetch(request).catch(() =>
-        caches.match(request).then((r) => r ?? caches.match("/jardim")),
+      fetch(request).catch(
+        () =>
+          new Response(
+            "<!doctype html><meta charset=utf-8><title>Sem conexão</title>" +
+              "<body style='font-family:system-ui;padding:2rem;text-align:center'>" +
+              "<p>Sem conexão agora.</p><p><a href=''>Tentar de novo</a></p>",
+            { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 503 },
+          ),
       ),
     );
     return;

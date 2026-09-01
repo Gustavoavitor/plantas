@@ -53,7 +53,7 @@ export default async function PaginaJardim({ params }: PageProps<"/jardins/[id]"
           <IconeVoltar className="h-5 w-5" />
           Jardins
         </Link>
-        <h1 className="mt-2 font-manuscrita text-4xl leading-[1.3]">{jardim.nome}</h1>
+        <h1 className="titulo-jardim mt-1">{jardim.nome}</h1>
         {jardim.local && <p className="mt-2 text-sm text-suave">{jardim.local}</p>}
       </header>
 
