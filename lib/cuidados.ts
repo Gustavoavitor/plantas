@@ -1,9 +1,17 @@
-import type { Ambiente, Especie, Luz, Planta, TamanhoVaso } from "./tipos";
+import type { Ambiente, Luz, Planta, TamanhoVaso } from "./tipos";
 
 /**
- * Intervalo-base de rega, em dias, a partir da classificação da Perenual.
- * Usado só quando a API não devolve um benchmark numérico.
+ * O mínimo que precisamos saber sobre a espécie para montar o cronograma.
+ * Vem do catálogo em `lib/catalogo.ts`.
  */
+export type DadosEspecie = {
+  rega?: string | null;
+  regaDias?: number | null;
+  toleraSeca?: boolean | null;
+  ciclo?: string | null;
+};
+
+/** Intervalo-base de rega, em dias, quando só temos a classificação. */
 const BASE_POR_CLASSE: Record<string, number> = {
   frequent: 3,
   average: 7,
@@ -66,12 +74,12 @@ export type CalculoRega = {
  * Os fatores são multiplicativos: cada condição estica ou encurta o intervalo.
  */
 export function calcularIntervaloRega(
-  especie: Pick<Especie, "rega" | "rega_dias" | "tolera_seca"> | null,
+  especie: DadosEspecie | null,
   contexto: ContextoPlanta,
   data = new Date(),
 ): CalculoRega {
   const classe = especie?.rega?.toLowerCase() ?? "";
-  const base = especie?.rega_dias ?? BASE_POR_CLASSE[classe] ?? 7;
+  const base = especie?.regaDias ?? BASE_POR_CLASSE[classe] ?? 7;
 
   const estacao = estacaoDoAno(data);
   const motivos: string[] = [];
@@ -96,7 +104,7 @@ export function calcularIntervaloRega(
     motivos.push("Muito substrato: a água dura mais.");
   }
 
-  if (especie?.tolera_seca) {
+  if (especie?.toleraSeca) {
     fator *= 1.2;
     motivos.push("Espécie tolerante à seca: errar para menos é mais seguro.");
   }
@@ -110,7 +118,7 @@ export function calcularIntervaloRega(
  * (a maioria das plantas não deve ser adubada no inverno).
  */
 export function calcularIntervaloAdubacao(
-  especie: Pick<Especie, "ciclo" | "rega"> | null,
+  especie: DadosEspecie | null,
   data = new Date(),
 ): { dias: number; motivo: string } {
   const estacao = estacaoDoAno(data);

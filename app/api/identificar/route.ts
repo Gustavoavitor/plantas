@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { especiePorNomeCientifico } from "@/lib/perenual";
+import { buscarCuidados } from "@/lib/catalogo";
 import { identificarPlanta, type Orgao } from "@/lib/plantnet";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
 
@@ -10,9 +10,11 @@ const ORGAOS_VALIDOS: Orgao[] = ["auto", "leaf", "flower", "fruit", "bark"];
 const TAMANHO_MAXIMO = 8 * 1024 * 1024; // 8 MB por foto
 
 /**
- * Recebe as fotos, identifica a espécie na Pl@ntNet e já busca os dados de
- * cultivo correspondentes na Perenual. As chaves das APIs ficam só aqui,
- * no servidor — nunca chegam ao navegador.
+ * Recebe as fotos, identifica a espécie na Pl@ntNet e busca os cuidados
+ * no catálogo local. A chave da API fica só aqui, no servidor.
+ *
+ * O catálogo é local de propósito: o plano gratuito da Perenual devolve
+ * apenas taxonomia, sem nenhum dado de rega ou luz.
  */
 export async function POST(request: NextRequest) {
   const supabase = await criarClienteServidor();
@@ -62,22 +64,16 @@ export async function POST(request: NextRequest) {
     if (palpites.length === 0) {
       return NextResponse.json({
         palpites: [],
-        especie: null,
+        cuidados: null,
         aviso:
           "Não reconheci a planta. Tente uma foto mais próxima de uma folha isolada, com boa luz e fundo limpo.",
       });
     }
 
-    // Busca os cuidados só para o palpite mais forte, para poupar a cota
-    // da Perenual. Os outros palpites o usuário pode escolher manualmente.
-    let especie = null;
-    try {
-      especie = await especiePorNomeCientifico(palpites[0].nomeCientifico);
-    } catch (erro) {
-      console.warn("Perenual indisponível:", erro);
-    }
+    const melhor = palpites[0];
+    const cuidados = buscarCuidados(melhor.nomeCientifico, melhor.familia);
 
-    return NextResponse.json({ palpites, especie });
+    return NextResponse.json({ palpites, cuidados });
   } catch (erro) {
     const mensagem = erro instanceof Error ? erro.message : "Falha na identificação";
     return NextResponse.json({ erro: mensagem }, { status: 502 });

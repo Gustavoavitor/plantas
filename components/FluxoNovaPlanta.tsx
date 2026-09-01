@@ -3,20 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { criarPlanta } from "@/app/acoes";
+import type { Cuidados } from "@/lib/catalogo";
 import { calcularIntervaloAdubacao, calcularIntervaloRega } from "@/lib/cuidados";
 import { caminhoStorage, reduzirImagem } from "@/lib/imagem";
 import { criarClienteNavegador } from "@/lib/supabase/cliente";
-import type { Ambiente, Especie, Luz, PalpiteEspecie, TamanhoVaso } from "@/lib/tipos";
+import type { Ambiente, Luz, PalpiteEspecie, TamanhoVaso } from "@/lib/tipos";
 import { ROTULOS } from "@/lib/tipos";
 import { IconeCamera } from "./Icones";
 
 type Etapa = "foto" | "identificando" | "escolha" | "detalhes";
 
 type ResultadoBusca = {
-  id: number;
-  nomeComum: string | null;
   nomeCientifico: string | null;
-  imagem: string | null;
+  nomeComum: string | null;
+  origem: "catalogo" | "perenual";
 };
 
 const ORGAOS = [
@@ -26,6 +26,13 @@ const ORGAOS = [
   { valor: "fruit", rotulo: "Fruto" },
   { valor: "bark", rotulo: "Caule / tronco" },
 ] as const;
+
+const AVISO_PRECISAO: Record<Cuidados["precisao"], string | null> = {
+  especie: null,
+  genero: "Cuidados do gênero — costuma valer para todas as espécies parecidas.",
+  familia: "Não tenho esta espécie no catálogo. Usei os cuidados típicos da família.",
+  padrao: "Espécie desconhecida para mim: parti de um cronograma médio, que você pode ajustar.",
+};
 
 export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
   const router = useRouter();
@@ -40,11 +47,11 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
   const [orgao, setOrgao] = useState<string>("auto");
 
   const [palpites, setPalpites] = useState<PalpiteEspecie[]>([]);
-  const [especie, setEspecie] = useState<Especie | null>(null);
-  const [nomeEscolhido, setNomeEscolhido] = useState<{ cientifico: string | null; comum: string | null }>({
-    cientifico: null,
-    comum: null,
-  });
+  const [cuidados, setCuidados] = useState<Cuidados | null>(null);
+  const [nomeEscolhido, setNomeEscolhido] = useState<{
+    cientifico: string | null;
+    comum: string | null;
+  }>({ cientifico: null, comum: null });
 
   const [termoBusca, setTermoBusca] = useState("");
   const [resultadosBusca, setResultadosBusca] = useState<ResultadoBusca[] | null>(null);
@@ -58,11 +65,13 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
   const [notas, setNotas] = useState("");
   const [salvando, setSalvando] = useState(false);
 
+  const entrada = cuidados?.entrada ?? null;
+
   const sugestao = useMemo(
-    () => calcularIntervaloRega(especie, { ambiente, luz, tamanho_vaso: vaso }),
-    [especie, ambiente, luz, vaso],
+    () => calcularIntervaloRega(entrada, { ambiente, luz, tamanho_vaso: vaso }),
+    [entrada, ambiente, luz, vaso],
   );
-  const sugestaoAdubo = useMemo(() => calcularIntervaloAdubacao(especie), [especie]);
+  const sugestaoAdubo = useMemo(() => calcularIntervaloAdubacao(entrada), [entrada]);
 
   const [intervaloRega, setIntervaloRega] = useState<number | null>(null);
   const regaFinal = intervaloRega ?? sugestao.dias;
@@ -94,20 +103,17 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
     try {
       const r = await fetch("/api/identificar", { method: "POST", body: form });
       const dados = await r.json();
-
       if (!r.ok) throw new Error(dados.erro ?? "Falha na identificação");
 
       setPalpites(dados.palpites ?? []);
-      setEspecie(dados.especie ?? null);
+      setCuidados(dados.cuidados ?? null);
       if (dados.aviso) setAviso(dados.aviso);
 
-      if (dados.palpites?.length > 0) {
-        const primeiro = dados.palpites[0] as PalpiteEspecie;
-        setNomeEscolhido({
-          cientifico: primeiro.nomeCientifico,
-          comum: dados.especie?.nome_comum ?? primeiro.nomesComuns[0] ?? null,
-        });
-        setApelido(dados.especie?.nome_comum ?? primeiro.nomesComuns[0] ?? "");
+      const primeiro = dados.palpites?.[0] as PalpiteEspecie | undefined;
+      if (primeiro) {
+        const popular = dados.cuidados?.entrada?.nomes?.[0] ?? primeiro.nomesComuns[0] ?? null;
+        setNomeEscolhido({ cientifico: primeiro.nomeCientifico, comum: popular });
+        setApelido(popular ?? primeiro.nomeCientifico);
       }
 
       setEtapa("escolha");
@@ -117,18 +123,28 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
     }
   }
 
-  async function escolherPalpite(p: PalpiteEspecie) {
-    setNomeEscolhido({ cientifico: p.nomeCientifico, comum: p.nomesComuns[0] ?? null });
-    if (!apelido) setApelido(p.nomesComuns[0] ?? p.nomeCientifico);
+  async function carregarCuidados(nomeCientifico: string, familia?: string | null) {
+    const url = new URL("/api/especie", window.location.origin);
+    url.searchParams.set("cientifico", nomeCientifico);
+    if (familia) url.searchParams.set("familia", familia);
 
-    // Busca os cuidados desse palpite específico.
     try {
-      const r = await fetch(`/api/especie?cientifico=${encodeURIComponent(p.nomeCientifico)}`);
+      const r = await fetch(url);
       const dados = await r.json();
-      setEspecie(dados.especie ?? null);
+      setCuidados(dados.cuidados ?? null);
+      return dados.cuidados as Cuidados | null;
     } catch {
-      setEspecie(null);
+      setCuidados(null);
+      return null;
     }
+  }
+
+  async function escolherPalpite(p: PalpiteEspecie) {
+    const c = await carregarCuidados(p.nomeCientifico, p.familia);
+    const popular = c?.entrada?.nomes?.[0] ?? p.nomesComuns[0] ?? null;
+
+    setNomeEscolhido({ cientifico: p.nomeCientifico, comum: popular });
+    if (!apelido) setApelido(popular ?? p.nomeCientifico);
     setIntervaloRega(null);
     setEtapa("detalhes");
   }
@@ -150,21 +166,18 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
   }
 
   async function escolherDaBusca(r: ResultadoBusca) {
-    setNomeEscolhido({ cientifico: r.nomeCientifico, comum: r.nomeComum });
-    if (!apelido) setApelido(r.nomeComum ?? r.nomeCientifico ?? "");
-    try {
-      const resposta = await fetch(`/api/especie?id=${r.id}`);
-      const dados = await resposta.json();
-      setEspecie(dados.especie ?? null);
-    } catch {
-      setEspecie(null);
-    }
+    if (!r.nomeCientifico) return;
+    const c = await carregarCuidados(r.nomeCientifico);
+    const popular = r.nomeComum ?? c?.entrada?.nomes?.[0] ?? null;
+
+    setNomeEscolhido({ cientifico: r.nomeCientifico, comum: popular });
+    if (!apelido) setApelido(popular ?? r.nomeCientifico);
     setIntervaloRega(null);
     setEtapa("detalhes");
   }
 
   function pularIdentificacao() {
-    setEspecie(null);
+    setCuidados(null);
     setNomeEscolhido({ cientifico: null, comum: null });
     setIntervaloRega(null);
     setEtapa("detalhes");
@@ -204,7 +217,6 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
 
     const resultado = await criarPlanta({
       apelido: apelido.trim(),
-      especieId: especie?.id ?? null,
       nomeCientifico: nomeEscolhido.cientifico,
       nomeComum: nomeEscolhido.comum,
       fotoUrl,
@@ -235,7 +247,7 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-borda border-t-folha" />
         <p className="mt-5 font-medium">Identificando a espécie…</p>
-        <p className="mt-1 text-sm text-suave">Consultando Pl@ntNet e buscando os cuidados.</p>
+        <p className="mt-1 text-sm text-suave">Consultando a Pl@ntNet.</p>
       </div>
     );
   }
@@ -345,7 +357,11 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
                   >
                     {p.imagemReferencia ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.imagemReferencia} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+                      <img
+                        src={p.imagemReferencia}
+                        alt=""
+                        className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                      />
                     ) : (
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-folha-clara">
                         🌿
@@ -402,7 +418,7 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
             {resultadosBusca && resultadosBusca.length > 0 && (
               <ul className="space-y-2">
                 {resultadosBusca.map((r) => (
-                  <li key={r.id}>
+                  <li key={`${r.nomeCientifico}-${r.nomeComum}`}>
                     <button
                       type="button"
                       onClick={() => escolherDaBusca(r)}
@@ -438,10 +454,9 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
         <div className="rounded-suave border border-folha/25 bg-folha-clara px-4 py-3">
           <p className="font-medium">{nomeEscolhido.comum ?? nomeEscolhido.cientifico}</p>
           <p className="text-sm text-suave italic">{nomeEscolhido.cientifico}</p>
-          {!especie && (
-            <p className="mt-2 text-xs text-suave">
-              Não achei essa espécie no catálogo de cuidados. Vou usar um cronograma
-              padrão, que você pode ajustar.
+          {cuidados && AVISO_PRECISAO[cuidados.precisao] && (
+            <p className="mt-2 text-xs leading-relaxed text-suave">
+              {AVISO_PRECISAO[cuidados.precisao]}
             </p>
           )}
         </div>
@@ -533,12 +548,21 @@ export default function FluxoNovaPlanta({ usuarioId }: { usuarioId: string }) {
 
         <p className="mt-3 border-t border-borda pt-3 text-xs leading-relaxed text-suave">
           <strong className="font-medium text-tinta">Adubação: </strong>
-          {sugestaoAdubo.dias === 0
-            ? "pausada agora. "
-            : `a cada ${sugestaoAdubo.dias} dias. `}
+          {sugestaoAdubo.dias === 0 ? "pausada agora. " : `a cada ${sugestaoAdubo.dias} dias. `}
           {sugestaoAdubo.motivo}
         </p>
       </div>
+
+      {entrada && entrada.dicas.length > 0 && (
+        <div className="rounded-suave border border-borda bg-superficie p-4">
+          <h3 className="mb-2 font-medium">Bom saber</h3>
+          <ul className="space-y-2 text-sm leading-relaxed text-suave">
+            {entrada.dicas.map((d) => (
+              <li key={d}>• {d}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <label className="flex items-start gap-3 rounded-suave border border-borda bg-superficie p-4">
         <input

@@ -11,6 +11,9 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Os scripts em scripts/ rodam direto no node, que exige a extensão .ts
+    // no import. Sem emissão de build, isso é seguro.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

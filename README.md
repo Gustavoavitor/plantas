@@ -16,13 +16,31 @@ início). Uso pessoal, restrito a convidados.
 | Site e API | Next.js 16 (App Router) na Vercel |
 | Banco, login e fotos | Supabase (Postgres + Auth + Storage) |
 | Identificação por foto | [Pl@ntNet](https://my.plantnet.org/) — 500 identificações/dia grátis |
-| Dados de cultivo | [Perenual](https://perenual.com/docs/api) |
+| Dados de cultivo | catálogo próprio em `lib/catalogo.ts` |
+| Busca auxiliar por nome | [Perenual](https://perenual.com/docs/api) (opcional) |
 | Lembretes | Vercel Cron + Web Push (VAPID) |
 
 As chaves das APIs ficam apenas no servidor, em rotas dentro de `app/api/`.
 O navegador nunca as vê.
 
-### O cronograma não é o número cru da API
+### Por que os cuidados não vêm da Perenual
+
+Testado na prática: no plano gratuito a Perenual devolve **só taxonomia** —
+nome, família, gênero. `species/details` e `species-care-guide-list` respondem
+*"Please Upgrade Plan"*, e até as imagens vêm trocadas por um
+`upgrade_access.jpg`. Não há nenhum campo de rega, luz ou dificuldade.
+
+Então os cuidados vivem em [`lib/catalogo.ts`](lib/catalogo.ts): 99 entradas
+curadas, indexadas por gênero botânico, com nomes populares e dicas em
+português. A Pl@ntNet já devolve gênero e família, então o casamento é direto e
+a busca vai afunilando: **espécie exata → gênero → família → padrão**. É de
+graça, instantâneo, sem cota e funciona offline.
+
+A Perenual continua no projeto só para uma coisa: descobrir o nome científico
+de plantas fora do catálogo, quando você busca pelo nome popular. Se a chave
+faltar, o app funciona igual.
+
+### O cronograma não é o número cru do catálogo
 
 `lib/cuidados.ts` pega o dado botânico da espécie e ajusta para as condições
 reais da sua planta — estação do ano (hemisfério sul), ambiente, luz e tamanho
@@ -31,8 +49,8 @@ vaso grande na sombra em julho recebem cronogramas bem diferentes.
 
 ### O diagnóstico é por sintoma, não por foto
 
-Nem a Pl@ntNet nem a Perenual fazem diagnóstico de doença por imagem no plano
-gratuito — a Pl@ntNet só identifica espécie. `lib/diagnostico.ts` faz o que um
+A Pl@ntNet só identifica espécie, e o diagnóstico da Perenual é pago.
+`lib/diagnostico.ts` faz o que um
 jardineiro experiente faria: cruza os sintomas que você marca com o seu
 histórico de rega. Isso resolve o problema mais comum do gênero, que é
 confundir sede com afogamento — os dois dão exatamente os mesmos sintomas na
@@ -108,20 +126,39 @@ app/
   acoes.ts            server actions: toda escrita no banco passa aqui
   auth/callback/      troca o link do e-mail por sessão + checa convite
 lib/
+  catalogo.ts         cuidados por gênero, com nomes e dicas em português
   cuidados.ts         cálculo dos intervalos de rega e adubação
   diagnostico.ts      triagem de problemas por sintoma
-  perenual.ts         cliente da Perenual + cache no Supabase
   plantnet.ts         cliente da Pl@ntNet
+  perenual.ts         busca auxiliar de nome científico (opcional)
 proxy.ts              renova a sessão e protege as rotas
 supabase/schema.sql   tabelas, RLS e bucket
-scripts/              gerador dos ícones do app
+scripts/
+  gerar-icones.mjs    ícones do app, sem editor de imagem
+  conferir-cuidados.ts confere catálogo e cálculo de rega
 ```
 
 > No Next.js 16 o antigo `middleware.ts` passou a se chamar `proxy.ts`.
 
 ## Cotas
 
-A Pl@ntNet permite 500 identificações por dia. A Perenual é mais apertada, então
-`lib/perenual.ts` guarda cada espécie consultada na tabela `especies` e só
-consulta de novo depois de 90 dias. Quem já foi identificado uma vez não gasta
-cota nunca mais.
+A Pl@ntNet permite 500 identificações por dia — só é consumida quando você
+cadastra uma planta nova. Os cuidados vêm do catálogo local e não gastam nada.
+
+As tabelas `especies` e a coluna `plantas.especie_id` continuam no schema, sem
+uso hoje. Ficaram ali de propósito: se um dia você assinar a Perenual, é onde o
+cache dos dados pagos entra sem precisar mexer no banco.
+
+## Ampliar o catálogo
+
+Achou uma planta que caiu em "gênero" ou "família"? Abra
+[`lib/catalogo.ts`](lib/catalogo.ts) e acrescente uma entrada em `GENEROS`
+(chave = gênero em minúsculas) ou um ajuste em `ESPECIES` (chave = `"genero
+especie"`). Depois rode:
+
+```bash
+node scripts/conferir-cuidados.ts
+```
+
+O script confere o casamento de nomes, simula rega em verão e inverno e valida
+que toda entrada tem nome popular, dicas, luz e um `regaDias` plausível.

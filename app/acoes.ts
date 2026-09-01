@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { buscarCuidados } from "@/lib/catalogo";
 import { calcularIntervaloAdubacao, calcularIntervaloRega } from "@/lib/cuidados";
 import { diagnosticar } from "@/lib/diagnostico";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
@@ -22,7 +23,6 @@ async function exigirUsuario() {
 
 export type DadosNovaPlanta = {
   apelido: string;
-  especieId: number | null;
   nomeCientifico: string | null;
   nomeComum: string | null;
   fotoUrl: string | null;
@@ -46,7 +46,6 @@ export async function criarPlanta(dados: DadosNovaPlanta) {
     .insert({
       usuario_id: user.id,
       apelido,
-      especie_id: dados.especieId,
       nome_cientifico: dados.nomeCientifico,
       nome_comum: dados.nomeComum,
       foto_url: dados.fotoUrl,
@@ -128,28 +127,20 @@ export async function recalcularCuidados(plantaId: string) {
 
   const { data: planta } = await supabase
     .from("plantas")
-    .select("id, especie_id, ambiente, luz, tamanho_vaso")
+    .select("id, nome_cientifico, ambiente, luz, tamanho_vaso")
     .eq("id", plantaId)
     .single();
 
   if (!planta) return { erro: "Planta não encontrada." };
 
-  let especie = null;
-  if (planta.especie_id) {
-    const { data } = await supabase
-      .from("especies")
-      .select("rega, rega_dias, tolera_seca, ciclo")
-      .eq("id", planta.especie_id)
-      .maybeSingle();
-    especie = data;
-  }
+  const { entrada } = buscarCuidados(planta.nome_cientifico);
 
-  const rega = calcularIntervaloRega(especie, {
+  const rega = calcularIntervaloRega(entrada, {
     ambiente: planta.ambiente,
     luz: planta.luz,
     tamanho_vaso: planta.tamanho_vaso,
   });
-  const aduba = calcularIntervaloAdubacao(especie);
+  const aduba = calcularIntervaloAdubacao(entrada);
 
   await supabase
     .from("plantas")

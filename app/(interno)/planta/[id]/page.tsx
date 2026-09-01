@@ -4,13 +4,20 @@ import { notFound } from "next/navigation";
 import AcoesCuidado from "@/components/AcoesCuidado";
 import { IconeVoltar } from "@/components/Icones";
 import PainelDiagnostico from "@/components/PainelDiagnostico";
+import { buscarCuidados, type Nivel } from "@/lib/catalogo";
 import { frasePendencia, statusAdubacao, statusRega } from "@/lib/cuidados";
 import { criarClienteServidor, usuarioAtual } from "@/lib/supabase/servidor";
-import type { Especie, EventoCuidado, Planta } from "@/lib/tipos";
+import type { EventoCuidado, Planta } from "@/lib/tipos";
 import { ROTULOS } from "@/lib/tipos";
-import { dataCurta, dataLonga, traduzirCiclo, traduzirLuz, traduzirNivel, traduzirRega } from "@/lib/traducoes";
+import { dataCurta, dataLonga, traduzirRega } from "@/lib/traducoes";
 
 export const dynamic = "force-dynamic";
+
+const NIVEL: Record<Nivel, string> = {
+  facil: "Fácil",
+  media: "Exige atenção",
+  dificil: "Difícil",
+};
 
 export async function generateMetadata({ params }: PageProps<"/planta/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -29,21 +36,19 @@ export default async function PaginaPlanta({ params }: PageProps<"/planta/[id]">
 
   const p = planta as Planta;
 
-  const [{ data: especieBruta }, { data: eventosBrutos }] = await Promise.all([
-    p.especie_id
-      ? supabase.from("especies").select("*").eq("id", p.especie_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-    supabase
-      .from("eventos_cuidado")
-      .select("id, planta_id, tipo, data, observacao, criado_em")
-      .eq("planta_id", id)
-      .order("data", { ascending: false })
-      .order("criado_em", { ascending: false })
-      .limit(25),
-  ]);
+  const { data: eventosBrutos } = await supabase
+    .from("eventos_cuidado")
+    .select("id, planta_id, tipo, data, observacao, criado_em")
+    .eq("planta_id", id)
+    .order("data", { ascending: false })
+    .order("criado_em", { ascending: false })
+    .limit(25);
 
-  const especie = especieBruta as Especie | null;
   const eventos = (eventosBrutos ?? []) as EventoCuidado[];
+
+  // A ficha vem do catálogo local, a partir do nome científico.
+  const { entrada, precisao } = buscarCuidados(p.nome_cientifico);
+  const temFicha = p.nome_cientifico !== null && precisao !== "padrao";
 
   const rega = statusRega(p);
   const aduba = statusAdubacao(p);
@@ -133,39 +138,44 @@ export default async function PaginaPlanta({ params }: PageProps<"/planta/[id]">
       </div>
 
       {/* Ficha da espécie */}
-      {especie && (
+      {temFicha && (
         <section className="mb-6 rounded-suave border border-borda bg-superficie p-4">
           <h2 className="mb-3 font-medium">Sobre a espécie</h2>
 
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-            <Dado rotulo="Rega" valor={traduzirRega(especie.rega)} />
-            <Dado
-              rotulo="Luz"
-              valor={especie.luz?.map((l) => traduzirLuz(l)).filter(Boolean).join(", ") || null}
-            />
-            <Dado rotulo="Ciclo" valor={traduzirCiclo(especie.ciclo)} />
-            <Dado rotulo="Dificuldade" valor={traduzirNivel(especie.nivel_cuidado)} />
-            {especie.tolera_seca && <Dado rotulo="Seca" valor="Tolera bem" />}
-            {especie.interno && <Dado rotulo="Interior" valor="Adapta-se bem" />}
+            <Dado rotulo="Rega" valor={traduzirRega(entrada.rega)} />
+            <Dado rotulo="Luz" valor={entrada.luz.join(", ")} />
+            <Dado rotulo="Ciclo" valor={entrada.ciclo} />
+            <Dado rotulo="Dificuldade" valor={NIVEL[entrada.nivel]} />
+            {entrada.toleraSeca && <Dado rotulo="Seca" valor="Tolera bem" />}
+            {entrada.interno && <Dado rotulo="Interior" valor="Adapta-se bem" />}
           </dl>
 
-          {especie.toxica_animais && (
+          {entrada.toxicaAnimais && (
             <p className="mt-4 rounded-suave border border-atencao/30 bg-atencao-clara px-3 py-2.5 text-sm text-atencao">
               Tóxica para cães e gatos. Deixe fora do alcance deles.
             </p>
           )}
 
-          {especie.descricao && (
-            <details className="mt-4">
-              <summary className="cursor-pointer text-sm font-medium text-folha">
-                Ler descrição botânica
-              </summary>
-              <p className="mt-2 text-sm leading-relaxed text-suave">{especie.descricao}</p>
-            </details>
+          {entrada.dicas.length > 0 && (
+            <>
+              <h3 className="mt-4 text-xs font-semibold tracking-wide text-suave uppercase">
+                Bom saber
+              </h3>
+              <ul className="mt-2 space-y-2 text-sm leading-relaxed text-suave">
+                {entrada.dicas.map((d) => (
+                  <li key={d}>• {d}</li>
+                ))}
+              </ul>
+            </>
           )}
 
-          <p className="mt-4 border-t border-borda pt-3 text-xs text-suave">
-            Dados da Perenual, ajustados para as condições que você informou.
+          <p className="mt-4 border-t border-borda pt-3 text-xs leading-relaxed text-suave">
+            {precisao === "especie"
+              ? "Cuidados desta espécie, ajustados para as condições que você informou."
+              : precisao === "genero"
+                ? "Cuidados do gênero, ajustados para as suas condições. Vale para as espécies parecidas."
+                : "Não tenho esta espécie no catálogo. Estes são os cuidados típicos da família."}
           </p>
         </section>
       )}
