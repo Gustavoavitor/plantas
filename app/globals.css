@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Paleta: papel quente, verde de folha, terracota de vaso.
+   ------------------------------------------------------------------ */
+:root {
+  --papel: #fbfaf6;
+  --superficie: #ffffff;
+  --borda: #e7e4d9;
+  --tinta: #1f2a22;
+  --suave: #6b7a6e;
+  --folha: #2f6b4f;
+  --folha-clara: #e8f1ea;
+  --terra: #b5623a;
+  --terra-clara: #f7ece5;
+  --alerta: #c4552f;
+  --alerta-clara: #fbeae3;
+  --atencao: #a8791f;
+  --atencao-clara: #f9f1dd;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #141815;
+    --superficie: #1c221e;
+    --borda: #2c352e;
+    --tinta: #e8ece9;
+    --suave: #97a49a;
+    --folha: #7cc79c;
+    --folha-clara: #1e2f26;
+    --terra: #d98f65;
+    --terra-clara: #2e2320;
+    --alerta: #ef8663;
+    --alerta-clara: #33211b;
+    --atencao: #d9b45c;
+    --atencao-clara: #2d2718;
+  }
+}
+
+@theme inline {
+  --color-papel: var(--papel);
+  --color-superficie: var(--superficie);
+  --color-borda: var(--borda);
+  --color-tinta: var(--tinta);
+  --color-suave: var(--suave);
+  --color-folha: var(--folha);
+  --color-folha-clara: var(--folha-clara);
+  --color-terra: var(--terra);
+  --color-terra-clara: var(--terra-clara);
+  --color-alerta: var(--alerta);
+  --color-alerta-clara: var(--alerta-clara);
+  --color-atencao: var(--atencao);
+  --color-atencao-clara: var(--atencao-clara);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --radius-suave: 0.875rem;
+}
+
+html {
+  background: var(--papel);
+  color-scheme: light dark;
+  /* Impede o Safari de reajustar o tamanho do texto sozinho. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--papel);
+  color: var(--tinta);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Respeita o entalhe e a barra inferior do iPhone. */
+.area-segura-baixo {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+}
+.area-segura-cima {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  border-radius: var(--radius-suave);
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--tinta);
+  padding: 0.7rem 0.85rem;
+  /* 16px impede o Safari de dar zoom ao focar o campo. */
+  font-size: 16px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--folha);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
