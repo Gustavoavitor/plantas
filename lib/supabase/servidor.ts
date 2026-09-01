@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { chavePublicaSupabase, urlSupabase } from "./config";
+import { chavePublicaSupabase, primeiro, urlSupabase } from "./config";
 
 /**
  * Cliente Supabase para Server Components, Server Actions e Route Handlers.
@@ -40,7 +40,12 @@ export async function criarClienteServidor() {
  */
 export function criarClienteAdmin() {
   // SUPABASE_SECRET_KEY é o nome que a integração Supabase–Vercel usa.
-  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+  // `primeiro` em vez de `??` porque variável criada vazia na Vercel venceria
+  // a alternativa que tem valor de verdade.
+  const chave = primeiro(
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    process.env.SUPABASE_SECRET_KEY,
+  );
   if (!chave) {
     throw new Error(
       "Defina SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_SECRET_KEY) nas variáveis de ambiente.",

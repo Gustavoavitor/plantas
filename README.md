@@ -97,13 +97,21 @@ Este projeto está em **https://plantas-seven.vercel.app**.
 
 Na Vercel, em *Settings → Environment Variables*, cole **todas** as variáveis do
 `.env.local` — use o campo de importar `.env`, que preenche nome e valor de uma
-vez. Depois troque `NEXT_PUBLIC_URL` pelo endereço de produção.
+vez.
+
+> **A importação não sobrescreve.** Se a variável já existe, a Vercel rejeita o
+> lote inteiro com *"already exists"*. Apague as antigas antes de reimportar, ou
+> edite uma a uma.
 
 > **Cuidado com a variável vazia.** Colar só os nomes, sem valor, cria a
-> variável em branco na Vercel — e o app quebra exatamente como se ela não
-> existisse. Para conferir depois do deploy, abra
+> variável em branco — e o app quebra exatamente como se ela não existisse. Para
+> conferir depois do deploy, abra
 > [`/api/diagnostico`](https://plantas-seven.vercel.app/api/diagnostico): ele
 > diz `ok`, `vazia` ou `ausente` para cada uma, sem expor nenhum valor.
+
+Não existe variável de URL do app: em produção a Vercel injeta
+`VERCEL_PROJECT_PRODUCTION_URL` sozinha, e as notificações usam caminho
+relativo.
 
 Variável nova só passa a valer no **próximo deploy** — depois de salvar, use
 *Deployments → ⋯ → Redeploy*.

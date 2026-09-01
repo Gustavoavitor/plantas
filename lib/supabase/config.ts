@@ -21,7 +21,7 @@
  * uma variável criada mas sem valor, e `??` deixaria essa passar, escondendo
  * a variável seguinte que estava certa.
  */
-function primeiro(...valores: Array<string | undefined>): string | undefined {
+export function primeiro(...valores: Array<string | undefined>): string | undefined {
   for (const valor of valores) {
     const limpo = valor?.trim();
     if (limpo) return limpo;
@@ -64,18 +64,17 @@ export function chavePublicaSupabase(): string {
 }
 
 /**
- * Endereço público do app, usado nos links das notificações.
- * Em produção a Vercel preenche VERCEL_PROJECT_PRODUCTION_URL sozinha.
+ * Endereço público do app.
+ *
+ * Não existe variável para isto: as notificações usam caminho relativo
+ * ("/jardim"), que o service worker resolve contra a própria origem. Em
+ * produção a Vercel injeta VERCEL_PROJECT_PRODUCTION_URL sozinha, então
+ * só serve para exibição no diagnóstico.
  */
 export function urlDoApp(): string {
-  const explicita = primeiro(process.env.NEXT_PUBLIC_URL);
-  if (explicita) return explicita.replace(/\/$/, "");
-
   const daVercel = primeiro(
     process.env.VERCEL_PROJECT_PRODUCTION_URL,
     process.env.VERCEL_URL,
   );
-  if (daVercel) return `https://${daVercel}`;
-
-  return "http://localhost:3000";
+  return daVercel ? `https://${daVercel}` : "http://localhost:3000";
 }

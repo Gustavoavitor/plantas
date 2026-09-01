@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { urlDoApp } from "@/lib/supabase/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,8 +69,7 @@ export async function GET() {
       // A URL do Supabase é pública por natureza — vai no bundle do
       // navegador de qualquer jeito. Nenhuma chave aparece aqui.
       urlSupabase: process.env.NEXT_PUBLIC_SUPABASE_URL || null,
-      urlDoApp:
-        process.env.NEXT_PUBLIC_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || null,
+      urlDoApp: urlDoApp(),
     },
     { status: quebradas.length === 0 ? 200 : 503 },
   );
