@@ -93,14 +93,29 @@ npm run dev
 
 ### 4. Publicar
 
-Na Vercel, importe o repositório e cole **todas** as variáveis do `.env.local`
-em *Settings → Environment Variables*. Ajuste `NEXT_PUBLIC_URL` para o endereço
-final do site.
+Este projeto está em **https://plantas-seven.vercel.app**.
 
-No Supabase, em *Authentication → URL Configuration*, adicione o endereço da
-Vercel em **Site URL** e em **Redirect URLs** (incluindo
-`https://seu-site.vercel.app/auth/callback`). Sem isso o link do e-mail não
-funciona em produção.
+Na Vercel, em *Settings → Environment Variables*, cole **todas** as variáveis do
+`.env.local` — use o campo de importar `.env`, que preenche nome e valor de uma
+vez. Depois troque `NEXT_PUBLIC_URL` pelo endereço de produção.
+
+> **Cuidado com a variável vazia.** Colar só os nomes, sem valor, cria a
+> variável em branco na Vercel — e o app quebra exatamente como se ela não
+> existisse. Para conferir depois do deploy, abra
+> [`/api/diagnostico`](https://plantas-seven.vercel.app/api/diagnostico): ele
+> diz `ok`, `vazia` ou `ausente` para cada uma, sem expor nenhum valor.
+
+Variável nova só passa a valer no **próximo deploy** — depois de salvar, use
+*Deployments → ⋯ → Redeploy*.
+
+No Supabase, em *Authentication → URL Configuration*:
+
+- **Site URL**: `https://plantas-seven.vercel.app` — com o `https://`, senão o
+  link do e-mail sai quebrado.
+- **Redirect URLs**: `https://plantas-seven.vercel.app/**`
+
+Use o domínio de produção. O endereço `plantas-<time>.vercel.app` é protegido
+por SSO da Vercel e não serve para o retorno do login.
 
 O cron de lembretes já está declarado em `vercel.json` e roda às 8h de Brasília.
 
