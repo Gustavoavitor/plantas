@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AcoesCuidado from "@/components/AcoesCuidado";
+import CalendarioCuidados from "@/components/CalendarioCuidados";
 import { IconeVoltar } from "@/components/Icones";
 import PainelDiagnostico from "@/components/PainelDiagnostico";
 import { buscarCuidados, type Nivel } from "@/lib/catalogo";
@@ -42,7 +43,9 @@ export default async function PaginaPlanta({ params }: PageProps<"/planta/[id]">
     .eq("planta_id", id)
     .order("data", { ascending: false })
     .order("criado_em", { ascending: false })
-    .limit(25);
+    // O calendário navega meses para trás, então carregamos bem mais que a
+    // lista mostra. Numa planta pessoal isso não passa de algumas centenas.
+    .limit(500);
 
   const eventos = (eventosBrutos ?? []) as EventoCuidado[];
 
@@ -187,6 +190,11 @@ export default async function PaginaPlanta({ params }: PageProps<"/planta/[id]">
         </section>
       )}
 
+      {/* Calendário */}
+      <div className="mb-6">
+        <CalendarioCuidados plantaId={p.id} eventos={eventos} />
+      </div>
+
       {/* Histórico */}
       <section className="mb-6">
         <h2 className="mb-3 text-sm font-semibold tracking-wide text-suave uppercase">
@@ -199,7 +207,7 @@ export default async function PaginaPlanta({ params }: PageProps<"/planta/[id]">
           </p>
         ) : (
           <ol className="space-y-0.5">
-            {eventos.map((e) => (
+            {eventos.slice(0, 25).map((e) => (
               <li key={e.id} className="flex items-baseline gap-3 py-2">
                 <span className="w-20 shrink-0 text-sm text-suave tabular-nums">
                   {dataCurta(e.data)}

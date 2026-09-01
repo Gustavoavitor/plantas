@@ -185,6 +185,17 @@ Vercel Cron (1×/dia)  →  GET /api/cron/lembretes
   atrasadas recebe um aviso só, dizendo "Regar 10 plantas".
 - Entram no aviso: rega atrasada, rega de hoje, planta nunca regada, e adubação
   atrasada quando não está pausada.
+
+Além das pendências do dia, o mesmo cron manda **no máximo um segundo aviso**,
+cada um com a sua cadência para não virar barulho:
+
+| Aviso | Quando dispara | O que diz |
+| --- | --- | --- |
+| Virada de estação | só no dia em que a estação muda | quantas plantas passam a pedir intervalo diferente |
+| Replantio anual | na primavera, dia 1º do mês | quantas estão há mais de um ano no mesmo vaso |
+| Sumiu do radar | às segundas | quantas estão há mais de 30 dias sem registro nenhum |
+
+A ordem de prioridade é essa mesma: se dois coincidirem, sai só o primeiro.
 - O horário está em `vercel.json` (`0 11 * * *` = 8h de Brasília). O campo
   `perfis.hora_lembrete` existe no banco mas **não é usado**: com um disparo
   por dia não há como respeitar o horário de cada pessoa. Fazer isso exigiria

@@ -19,13 +19,50 @@ const BASE_POR_CLASSE: Record<string, number> = {
   none: 30,
 };
 
-/** Estações do hemisfério sul, pelo mês (0 = janeiro). */
-export function estacaoDoAno(data = new Date()): "verao" | "outono" | "inverno" | "primavera" {
-  const mes = data.getMonth();
-  if (mes === 11 || mes <= 1) return "verao";
-  if (mes >= 2 && mes <= 4) return "outono";
-  if (mes >= 5 && mes <= 7) return "inverno";
+export type Estacao = "verao" | "outono" | "inverno" | "primavera";
+
+/**
+ * Início de cada estação no hemisfério sul, como MMDD.
+ *
+ * Vai pelos solstícios e equinócios, não pelo mês cheio: até 22 de setembro
+ * ainda é inverno no Brasil, embora setembro "pareça" primavera. A data exata
+ * oscila um dia entre os anos; para decidir rega isso é irrelevante.
+ */
+const INICIO_ESTACAO = {
+  verao: 1221, // 21 de dezembro
+  outono: 320, // 20 de março
+  inverno: 621, // 21 de junho
+  primavera: 923, // 23 de setembro
+} as const;
+
+function comoMMDD(data: Date) {
+  return (data.getMonth() + 1) * 100 + data.getDate();
+}
+
+/** Em que estação do hemisfério sul a data cai. */
+export function estacaoDoAno(data = new Date()): Estacao {
+  const hoje = comoMMDD(data);
+
+  if (hoje >= INICIO_ESTACAO.verao || hoje < INICIO_ESTACAO.outono) return "verao";
+  if (hoje < INICIO_ESTACAO.inverno) return "outono";
+  if (hoje < INICIO_ESTACAO.primavera) return "inverno";
   return "primavera";
+}
+
+/** A estação que vem depois desta. */
+export function proximaEstacao(atual: Estacao): Estacao {
+  const ordem: Estacao[] = ["verao", "outono", "inverno", "primavera"];
+  return ordem[(ordem.indexOf(atual) + 1) % 4];
+}
+
+/**
+ * Verdadeiro quando a data marca o primeiro dia de uma estação nova.
+ * É o gancho do aviso de virada, que só deve sair uma vez por estação.
+ */
+export function ehViradaDeEstacao(data = new Date()): boolean {
+  const ontem = new Date(data);
+  ontem.setDate(ontem.getDate() - 1);
+  return estacaoDoAno(data) !== estacaoDoAno(ontem);
 }
 
 const FATOR_ESTACAO = {
