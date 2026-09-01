@@ -5,6 +5,7 @@ import ClimaAgora from "@/components/Clima";
 import { IconeFlor, IconeMais } from "@/components/Icones";
 import { estacaoDoAno, ordenarPorUrgencia, statusRega } from "@/lib/cuidados";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
+import { tituloDoJardim } from "@/lib/titulo";
 import type { Planta } from "@/lib/tipos";
 
 export const metadata: Metadata = { title: "Jardim" };
@@ -31,9 +32,7 @@ export default async function PaginaJardim() {
     supabase.from("perfis").select("*").maybeSingle(),
   ]);
 
-  const titulo =
-    perfil?.titulo_jardim?.trim() ||
-    (perfil?.nome ? `Jardim de ${perfil.nome}` : "Meu jardim");
+  const titulo = tituloDoJardim(perfil);
 
   const plantas = ordenarPorUrgencia((data ?? []) as Planta[]);
 

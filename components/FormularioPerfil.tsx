@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { salvarPerfil } from "@/app/acoes";
+import { tituloDoJardim } from "@/lib/titulo";
 
 export default function FormularioPerfil({
   nomeInicial,
@@ -18,7 +19,7 @@ export default function FormularioPerfil({
   const [recado, setRecado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  const sugestao = nome.trim() ? `Jardim de ${nome.trim()}` : "Meu jardim";
+  const sugestao = tituloDoJardim({ nome, titulo_jardim: null });
 
   function salvar() {
     setErro(null);
