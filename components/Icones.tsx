@@ -75,6 +75,27 @@ export function IconeVoltar({ className = base }: Props) {
   );
 }
 
+export function IconeFlor({ className = base }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className} aria-hidden>
+      <circle cx="12" cy="8.2" r="2.1" />
+      <path d="M12 6.1a2.6 2.6 0 1 1 0-1.4M14.1 7.4a2.6 2.6 0 1 1 1.2-.7M14.1 9a2.6 2.6 0 1 1 1.2.7M9.9 7.4a2.6 2.6 0 1 0-1.2-.7M9.9 9a2.6 2.6 0 1 0-1.2.7" strokeLinejoin="round" />
+      <path d="M12 10.3V21" strokeLinecap="round" />
+      <path d="M12 15.5c0-2 1.6-3.6 3.6-3.6.2 2.2-1.4 3.9-3.6 4.1z" strokeLinejoin="round" />
+      <path d="M12 18c0-1.8-1.5-3.2-3.3-3.2-.2 2 1.3 3.5 3.3 3.7z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconeJardins({ className = base }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className={className} aria-hidden>
+      <path d="M12 21s6.5-5.1 6.5-9.6a6.5 6.5 0 0 0-13 0C5.5 15.9 12 21 12 21z" strokeLinejoin="round" />
+      <circle cx="12" cy="11" r="2.4" />
+    </svg>
+  );
+}
+
 export function IconeMais({ className = base }: Props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>

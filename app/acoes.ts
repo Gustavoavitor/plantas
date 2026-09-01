@@ -256,16 +256,105 @@ export async function rodarDiagnostico(plantaId: string, sintomas: string[], fot
 }
 
 // ------------------------------------------------------------------
+// Jardins (locais)
+// ------------------------------------------------------------------
+
+export async function criarJardim(nome: string, local: string | null) {
+  const { supabase, user } = await exigirUsuario();
+
+  const limpo = nome.trim();
+  if (!limpo) return { erro: "Dê um nome ao jardim." };
+
+  const { data, error } = await supabase
+    .from("jardins")
+    .insert({ usuario_id: user.id, nome: limpo, local: local?.trim() || null })
+    .select("id")
+    .single();
+
+  if (error) return { erro: traduzirErroJardins(error.message) };
+
+  revalidatePath("/jardins");
+  return { id: data.id as string };
+}
+
+export async function renomearJardim(id: string, nome: string, local: string | null) {
+  const { supabase } = await exigirUsuario();
+
+  const limpo = nome.trim();
+  if (!limpo) return { erro: "Dê um nome ao jardim." };
+
+  const { error } = await supabase
+    .from("jardins")
+    .update({ nome: limpo, local: local?.trim() || null })
+    .eq("id", id);
+
+  if (error) return { erro: traduzirErroJardins(error.message) };
+
+  revalidatePath("/jardins");
+  revalidatePath(`/jardins/${id}`);
+  return { ok: true };
+}
+
+/** Apagar o jardim não apaga as plantas: elas voltam a ficar sem lugar. */
+export async function apagarJardim(id: string) {
+  const { supabase } = await exigirUsuario();
+  const { error } = await supabase.from("jardins").delete().eq("id", id);
+  if (error) return { erro: traduzirErroJardins(error.message) };
+
+  revalidatePath("/jardins");
+  revalidatePath("/jardim");
+  return { ok: true };
+}
+
+export async function moverPlanta(plantaId: string, jardimId: string | null) {
+  const { supabase } = await exigirUsuario();
+
+  const { error } = await supabase
+    .from("plantas")
+    .update({ jardim_id: jardimId })
+    .eq("id", plantaId);
+
+  if (error) return { erro: traduzirErroJardins(error.message) };
+
+  revalidatePath("/jardins");
+  revalidatePath("/jardim");
+  revalidatePath(`/planta/${plantaId}`);
+  return { ok: true };
+}
+
+/** A migração dos jardins é separada; sem ela o erro do Postgres é críptico. */
+function traduzirErroJardins(mensagem: string) {
+  if (/jardins|jardim_id/i.test(mensagem) && /does not exist|schema cache/i.test(mensagem)) {
+    return "Os jardins ainda não existem no banco. Rode supabase/migracao-002-jardins.sql no SQL Editor do Supabase.";
+  }
+  return mensagem;
+}
+
+// ------------------------------------------------------------------
 // Perfil
 // ------------------------------------------------------------------
 
-export async function salvarPerfil(nome: string, horaLembrete: number) {
+export async function salvarPerfil(nome: string, tituloJardim: string | null) {
   const { supabase, user } = await exigirUsuario();
 
-  await supabase
+  const { error } = await supabase
     .from("perfis")
-    .upsert({ id: user.id, nome: nome.trim() || null, hora_lembrete: horaLembrete });
+    .upsert({
+      id: user.id,
+      nome: nome.trim() || null,
+      titulo_jardim: tituloJardim?.trim() || null,
+    });
+
+  if (error) {
+    if (/titulo_jardim/i.test(error.message)) {
+      return {
+        erro: "Rode supabase/migracao-002-jardins.sql no Supabase para poder personalizar o título.",
+      };
+    }
+    return { erro: error.message };
+  }
 
   revalidatePath("/ajustes");
+  revalidatePath("/jardim");
   return { ok: true };
 }

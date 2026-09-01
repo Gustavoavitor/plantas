@@ -48,16 +48,21 @@ export default function CalendarioCuidados({
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
 
+  // Marcações feitas agora, antes do servidor confirmar. Some sozinho no
+  // próximo carregamento, quando já vierem em `eventos`.
+  const [otimistas, setOtimistas] = useState<Array<{ data: string; tipo: TipoEvento }>>([]);
+
   // Agrupa os eventos por dia, para o desenho da grade ser direto.
   const porDia = useMemo(() => {
     const mapa = new Map<string, TipoEvento[]>();
-    for (const e of eventos) {
+    const juntos = [...eventos.map((e) => ({ data: e.data, tipo: e.tipo })), ...otimistas];
+    for (const e of juntos) {
       const lista = mapa.get(e.data) ?? [];
       if (!lista.includes(e.tipo)) lista.push(e.tipo);
       mapa.set(e.data, lista);
     }
     return mapa;
-  }, [eventos]);
+  }, [eventos, otimistas]);
 
   const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
   const diasNoMes = new Date(ano, mes + 1, 0).getDate();
@@ -71,14 +76,22 @@ export default function CalendarioCuidados({
 
   function marcar(tipo: TipoEvento) {
     if (!selecionado) return;
+    const dia = selecionado;
+
     setErro(null);
+    // A marca aparece no calendário na hora; o servidor confirma depois.
+    setOtimistas((atual) => [...atual, { data: dia, tipo }]);
+    setSelecionado(null);
+
     iniciar(async () => {
-      const r = await registrarCuidado(plantaId, tipo, "Registrado pelo calendário", selecionado);
+      const r = await registrarCuidado(plantaId, tipo, "Registrado pelo calendário", dia);
       if ("erro" in r && r.erro) {
+        setOtimistas((atual) =>
+          atual.filter((o) => !(o.data === dia && o.tipo === tipo)),
+        );
         setErro(r.erro);
-        return;
+        setSelecionado(dia);
       }
-      setSelecionado(null);
     });
   }
 

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import CartaoPlanta from "@/components/CartaoPlanta";
-import { IconeMais } from "@/components/Icones";
+import ClimaAgora from "@/components/Clima";
+import { IconeFlor, IconeMais } from "@/components/Icones";
 import { estacaoDoAno, ordenarPorUrgencia, statusRega } from "@/lib/cuidados";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
 import type { Planta } from "@/lib/tipos";
@@ -19,11 +20,20 @@ const SAUDACAO_ESTACAO = {
 export default async function PaginaJardim() {
   const supabase = await criarClienteServidor();
 
-  const { data } = await supabase
-    .from("plantas")
-    .select("*")
-    .eq("arquivada", false)
-    .order("criado_em", { ascending: false });
+  const [{ data }, { data: perfil }] = await Promise.all([
+    supabase
+      .from("plantas")
+      .select("*")
+      .eq("arquivada", false)
+      .order("criado_em", { ascending: false }),
+    // select("*") em vez de nomear colunas: assim a tela não quebra se a
+    // migração dos jardins ainda não tiver rodado.
+    supabase.from("perfis").select("*").maybeSingle(),
+  ]);
+
+  const titulo =
+    perfil?.titulo_jardim?.trim() ||
+    (perfil?.nome ? `Jardim de ${perfil.nome}` : "Meu jardim");
 
   const plantas = ordenarPorUrgencia((data ?? []) as Planta[]);
 
@@ -36,11 +46,8 @@ export default async function PaginaJardim() {
   return (
     <>
       <header className="area-segura-cima pt-6 pb-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Jardim</h1>
-            <p className="mt-1 text-sm text-suave">{SAUDACAO_ESTACAO[estacaoDoAno()]}</p>
-          </div>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <ClimaAgora />
           <Link
             href="/nova"
             aria-label="Adicionar planta"
@@ -49,6 +56,16 @@ export default async function PaginaJardim() {
             <IconeMais />
           </Link>
         </div>
+
+        {/* O subtítulo fica fora da linha do título: a fonte manuscrita tem
+            hastes que passam da caixa de texto e cortariam a frase abaixo. */}
+        <div className="flex items-center gap-3">
+          <IconeFlor className="h-9 w-9 shrink-0 text-folha" />
+          <h1 className="min-w-0 font-manuscrita text-4xl leading-[1.3] break-words">
+            {titulo}
+          </h1>
+        </div>
+        <p className="mt-2 text-sm text-suave">{SAUDACAO_ESTACAO[estacaoDoAno()]}</p>
       </header>
 
       {plantas.length === 0 && (

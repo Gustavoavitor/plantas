@@ -24,14 +24,18 @@ export default function AcoesCuidado({ plantaId, usuarioId, adubacaoPausada }: P
 
   function registrar(tipo: TipoEvento) {
     setErro(null);
+    // Confirma antes da resposta do servidor: o retorno visual precisa ser
+    // imediato, senão o toque parece não ter funcionado.
+    setConfirmado(tipo);
+
     iniciar(async () => {
       const r = await registrarCuidado(plantaId, tipo);
       if ("erro" in r && r.erro) {
+        setConfirmado(null);
         setErro(r.erro);
         return;
       }
-      setConfirmado(tipo);
-      setTimeout(() => setConfirmado(null), 2500);
+      setTimeout(() => setConfirmado((atual) => (atual === tipo ? null : atual)), 2500);
     });
   }
 

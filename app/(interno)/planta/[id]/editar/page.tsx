@@ -13,7 +13,12 @@ export default async function PaginaEditar({ params }: PageProps<"/planta/[id]/e
   const { id } = await params;
   const supabase = await criarClienteServidor();
 
-  const { data } = await supabase.from("plantas").select("*").eq("id", id).maybeSingle();
+  const [{ data }, { data: jardins }] = await Promise.all([
+    supabase.from("plantas").select("*").eq("id", id).maybeSingle(),
+    // Erro aqui só significa que a migração dos jardins não rodou ainda.
+    supabase.from("jardins").select("id, nome").order("nome"),
+  ]);
+
   if (!data) notFound();
 
   return (
@@ -29,7 +34,7 @@ export default async function PaginaEditar({ params }: PageProps<"/planta/[id]/e
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Editar</h1>
       </header>
 
-      <FormularioEdicao planta={data as Planta} />
+      <FormularioEdicao planta={data as Planta} jardins={jardins ?? []} />
     </>
   );
 }

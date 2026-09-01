@@ -11,16 +11,24 @@ type Props = {
 };
 
 export default function BotaoRegar({ plantaId, variante = "compacto" }: Props) {
-  const [pendente, iniciar] = useTransition();
+  const [, iniciar] = useTransition();
   const [feito, setFeito] = useState(false);
+  const [falhou, setFalhou] = useState(false);
 
   function regar() {
+    // Confirma na hora, sem esperar o servidor: no 4G a viagem de ida e
+    // volta passa de meio segundo, e o botão parecia travado nesse tempo.
+    setFeito(true);
+    setFalhou(false);
+
     iniciar(async () => {
       const r = await registrarCuidado(plantaId, "rega");
-      if (!("erro" in r)) {
-        setFeito(true);
-        setTimeout(() => setFeito(false), 2500);
+      if ("erro" in r && r.erro) {
+        setFeito(false);
+        setFalhou(true);
+        return;
       }
+      setTimeout(() => setFeito(false), 2500);
     });
   }
 
@@ -30,16 +38,16 @@ export default function BotaoRegar({ plantaId, variante = "compacto" }: Props) {
     <button
       type="button"
       onClick={regar}
-      disabled={pendente || feito}
+      disabled={feito}
       aria-label="Registrar rega"
       className={
         compacto
-          ? "flex shrink-0 items-center gap-1.5 rounded-full border border-folha/30 bg-folha-clara px-3 py-2 text-sm font-medium text-folha transition-opacity disabled:opacity-60"
-          : "flex w-full items-center justify-center gap-2 rounded-suave bg-folha px-4 py-3 font-medium text-white transition-opacity disabled:opacity-60 dark:text-papel"
+          ? "flex shrink-0 items-center gap-1.5 rounded-full border border-folha/30 bg-folha-clara px-3 py-2 text-sm font-semibold text-folha disabled:opacity-70"
+          : "flex w-full items-center justify-center gap-2 rounded-suave bg-folha px-4 py-3 font-semibold text-white disabled:opacity-70 dark:text-papel"
       }
     >
       <IconeGota className="h-5 w-5" />
-      {feito ? "Regada" : pendente ? "…" : compacto ? "Reguei" : "Registrar rega"}
+      {falhou ? "Tentar de novo" : feito ? "Regada" : compacto ? "Reguei" : "Registrar rega"}
     </button>
   );
 }

@@ -52,8 +52,13 @@
   --color-atencao: var(--atencao);
   --color-atencao-clara: var(--atencao-clara);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* rokkitt tem só os pesos 400 e 700: 500 e 600 caem para o mais próximo. */
+  --font-sans: "rokkitt", var(--font-geist-sans), ui-serif, Georgia, serif;
+  --font-manuscrita: "sedgwick-ave-display", "Bradley Hand", "Segoe Script", cursive;
   --radius-suave: 0.875rem;
+
+  /* Curva curta e com leve arranque: parece resposta física, não animação. */
+  --ease-toque: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 html {
@@ -83,6 +88,63 @@ select,
 textarea,
 button {
   font: inherit;
+}
+
+/* ------------------------------------------------------------------
+   Resposta ao toque.
+
+   O atraso que se sente no iPhone tem duas causas somadas: o Safari
+   espera para ver se vem um segundo toque (zoom), e o botão só muda de
+   aparência depois que o servidor responde. `touch-action: manipulation`
+   mata a espera do navegador; o `:active` dá retorno imediato antes de
+   qualquer resposta de rede.
+   ------------------------------------------------------------------ */
+button,
+a,
+summary,
+label,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a[href],
+[role="button"] {
+  transition:
+    transform 140ms var(--ease-toque),
+    opacity 140ms var(--ease-toque),
+    background-color 140ms var(--ease-toque),
+    border-color 140ms var(--ease-toque);
+}
+
+button:not(:disabled):active,
+a[href]:active,
+[role="button"]:not([aria-disabled="true"]):active {
+  /* Só transform e opacity: não forçam recálculo de layout. */
+  transform: scale(0.97);
+}
+
+/* Segurar o dedo num botão não deve abrir o menu de cópia do iOS. */
+button,
+[role="button"] {
+  -webkit-touch-callout: none;
+}
+
+/* Entrada suave de conteúdo que aparece depois de uma ação. */
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.surgir {
+  animation: surgir 180ms var(--ease-toque) both;
 }
 
 input[type="text"],

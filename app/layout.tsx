@@ -44,6 +44,14 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${geistSans.variable} h-full antialiased`}>
+      <head>
+        {/* Typekit: rokkitt (texto) e sedgwick-ave-display (título do jardim).
+            O preconnect adianta o handshake e corta uns 100 ms na primeira
+            pintura — a fonte vem de dois domínios diferentes. */}
+        <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
+        <link rel="preconnect" href="https://p.typekit.net" crossOrigin="" />
+        <link rel="stylesheet" href="https://use.typekit.net/ufu5bmi.css" />
+      </head>
       <body className="flex min-h-full flex-col font-sans">
         {children}
         <RegistrarServiceWorker />

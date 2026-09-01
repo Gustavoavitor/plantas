@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconeAjustes, IconeCamera, IconeJardim } from "./Icones";
+import { IconeAjustes, IconeCamera, IconeJardim, IconeJardins } from "./Icones";
 
 const ITENS = [
   { href: "/jardim", rotulo: "Jardim", Icone: IconeJardim },
+  { href: "/jardins", rotulo: "Lugares", Icone: IconeJardins },
   { href: "/nova", rotulo: "Adicionar", Icone: IconeCamera },
   { href: "/ajustes", rotulo: "Ajustes", Icone: IconeAjustes },
 ] as const;

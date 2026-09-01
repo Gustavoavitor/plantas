@@ -2,11 +2,24 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { arquivarPlanta, atualizarPlanta, recalcularCuidados } from "@/app/acoes";
+import {
+  arquivarPlanta,
+  atualizarPlanta,
+  moverPlanta,
+  recalcularCuidados,
+} from "@/app/acoes";
 import type { Ambiente, Luz, Planta, TamanhoVaso } from "@/lib/tipos";
 import { ROTULOS } from "@/lib/tipos";
 
-export default function FormularioEdicao({ planta }: { planta: Planta }) {
+export type OpcaoJardim = { id: string; nome: string };
+
+export default function FormularioEdicao({
+  planta,
+  jardins,
+}: {
+  planta: Planta & { jardim_id?: string | null };
+  jardins: OpcaoJardim[];
+}) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
 
@@ -17,6 +30,7 @@ export default function FormularioEdicao({ planta }: { planta: Planta }) {
   const [rega, setRega] = useState(planta.intervalo_rega_dias);
   const [aduba, setAduba] = useState(planta.intervalo_aduba_dias);
   const [notas, setNotas] = useState(planta.notas ?? "");
+  const [jardimId, setJardimId] = useState<string>(planta.jardim_id ?? "");
 
   const [erro, setErro] = useState<string | null>(null);
   const [recalculo, setRecalculo] = useState<string[] | null>(null);
@@ -40,6 +54,18 @@ export default function FormularioEdicao({ planta }: { planta: Planta }) {
         setErro(r.erro);
         return;
       }
+
+      // Feito à parte para a edição continuar funcionando mesmo que a
+      // migração dos jardins ainda não tenha rodado.
+      const original = planta.jardim_id ?? "";
+      if (jardimId !== original) {
+        const m = await moverPlanta(planta.id, jardimId || null);
+        if ("erro" in m && m.erro) {
+          setErro(m.erro);
+          return;
+        }
+      }
+
       router.push(`/planta/${planta.id}`);
     });
   }
@@ -73,6 +99,22 @@ export default function FormularioEdicao({ planta }: { planta: Planta }) {
           onChange={(e) => setApelido(e.target.value)}
         />
       </div>
+
+      {jardins.length > 0 && (
+        <div>
+          <label htmlFor="jardim" className="mb-1.5 block text-sm font-semibold">
+            Em qual jardim?
+          </label>
+          <select id="jardim" value={jardimId} onChange={(e) => setJardimId(e.target.value)}>
+            <option value="">Sem jardim definido</option>
+            {jardins.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <fieldset>
         <legend className="mb-2 text-sm font-medium">Onde ela fica?</legend>

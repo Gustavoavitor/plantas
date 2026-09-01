@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AtivarNotificacoes from "@/components/AtivarNotificacoes";
+import FormularioPerfil from "@/components/FormularioPerfil";
 import BotaoInstalar from "@/components/BotaoInstalar";
 import { criarClienteServidor, usuarioAtual } from "@/lib/supabase/servidor";
 import type { Planta } from "@/lib/tipos";
@@ -12,6 +13,8 @@ export const dynamic = "force-dynamic";
 export default async function PaginaAjustes() {
   const user = await usuarioAtual();
   const supabase = await criarClienteServidor();
+
+  const { data: perfil } = await supabase.from("perfis").select("*").maybeSingle();
 
   const { data: arquivadasBrutas } = await supabase
     .from("plantas")
@@ -32,6 +35,11 @@ export default async function PaginaAjustes() {
       </header>
 
       <div className="space-y-4">
+        <FormularioPerfil
+          nomeInicial={perfil?.nome ?? ""}
+          tituloInicial={perfil?.titulo_jardim ?? ""}
+        />
+
         <AtivarNotificacoes />
 
         <BotaoInstalar />
