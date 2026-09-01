@@ -127,12 +127,73 @@ por SSO da Vercel e não serve para o retorno do login.
 
 O cron de lembretes já está declarado em `vercel.json` e roda às 8h de Brasília.
 
-### 5. Instalar no iPhone
+### 5. Instalar no celular
 
-Abra o site no **Safari** → botão Compartilhar → *Adicionar à Tela de Início*.
+A tela de *Ajustes* detecta o aparelho e mostra o caminho certo.
 
-No iOS, notificação web só funciona com o app instalado assim. Depois de
-instalar, abra pelo ícone e ative os lembretes em *Ajustes*.
+| Aparelho | Como |
+| --- | --- |
+| Android | Chrome mostra o botão **Instalar** direto em Ajustes |
+| iPhone | Safari → Compartilhar → *Adicionar à Tela de Início* (manual, o iOS não oferece botão) |
+| Computador | Chrome ou Edge: ícone de instalar na barra de endereço |
+
+No iOS, notificação web **só existe** com o app instalado na tela de início. No
+Android funciona mesmo pelo navegador, mas instalado é melhor.
+
+---
+
+## Convidar mais gente
+
+Só quem está na tabela `convites` consegue entrar. Para adicionar, rode no SQL
+Editor do Supabase:
+
+```sql
+insert into convites (email, nome) values
+  ('pessoa@exemplo.com', 'Nome dela')
+on conflict (email) do nothing;
+```
+
+O e-mail precisa bater exatamente com o que a pessoa digitar, em minúsculas.
+Quem não está na lista tem a conta apagada no retorno do login e vê a mensagem
+de acesso restrito.
+
+Para remover alguém:
+
+```sql
+delete from convites where email = 'pessoa@exemplo.com';
+```
+
+Isso impede novos logins, mas **não** encerra a sessão de quem já entrou nem
+apaga as plantas. Para cortar o acesso na hora, apague também o usuário em
+*Authentication → Users*.
+
+---
+
+## Como funcionam os lembretes
+
+```
+Vercel Cron (1×/dia)  →  GET /api/cron/lembretes
+                             ↓  Authorization: Bearer CRON_SECRET
+                         varre todas as plantas não arquivadas
+                             ↓  statusRega / statusAdubacao
+                         agrupa as pendências por pessoa
+                             ↓  web-push, assinado com VAPID
+                         service worker  →  notificação no aparelho
+```
+
+- **Uma notificação por pessoa**, não uma por planta — quem tem dez plantas
+  atrasadas recebe um aviso só, dizendo "Regar 10 plantas".
+- Entram no aviso: rega atrasada, rega de hoje, planta nunca regada, e adubação
+  atrasada quando não está pausada.
+- O horário está em `vercel.json` (`0 11 * * *` = 8h de Brasília). O campo
+  `perfis.hora_lembrete` existe no banco mas **não é usado**: o plano Hobby da
+  Vercel não permite cron de hora em hora, que seria necessário para respeitar
+  o horário de cada pessoa.
+- Inscrição expirada (app desinstalado, permissão revogada) devolve 404 ou 410
+  e é apagada sozinha do banco.
+
+Para testar sem esperar o dia seguinte: *Ajustes → Enviar teste*, ou
+`vercel crons run /api/cron/lembretes`.
 
 ---
 

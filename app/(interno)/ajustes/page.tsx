@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AtivarNotificacoes from "@/components/AtivarNotificacoes";
+import BotaoInstalar from "@/components/BotaoInstalar";
 import { criarClienteServidor, usuarioAtual } from "@/lib/supabase/servidor";
 import type { Planta } from "@/lib/tipos";
 import { dataCurta } from "@/lib/traducoes";
@@ -33,20 +34,7 @@ export default async function PaginaAjustes() {
       <div className="space-y-4">
         <AtivarNotificacoes />
 
-        <section className="rounded-suave border border-borda bg-superficie p-4">
-          <h2 className="font-medium">Instalar no iPhone</h2>
-          <ol className="mt-2 space-y-1.5 text-sm leading-relaxed text-suave">
-            <li>1. Abra este site no Safari.</li>
-            <li>
-              2. Toque no botão Compartilhar (o quadrado com a seta para cima).
-            </li>
-            <li>3. Escolha &ldquo;Adicionar à Tela de Início&rdquo;.</li>
-          </ol>
-          <p className="mt-3 text-sm leading-relaxed text-suave">
-            O app abre em tela cheia, com ícone próprio, e passa a poder mandar
-            notificação.
-          </p>
-        </section>
+        <BotaoInstalar />
 
         {arquivadas.length > 0 && (
           <section className="rounded-suave border border-borda bg-superficie p-4">
