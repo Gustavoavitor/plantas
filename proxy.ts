@@ -1,8 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-/** Rotas que podem ser abertas sem login. */
-const PUBLICAS = ["/entrar", "/auth", "/api/cron", "/manifest.webmanifest", "/sw.js"];
+/** Telas que podem ser abertas sem login. */
+const PUBLICAS = ["/entrar", "/auth", "/manifest.webmanifest", "/sw.js"];
 
 /**
  * A partir do Next 16 o antigo `middleware.ts` se chama `proxy.ts`.
@@ -46,6 +46,13 @@ export async function proxy(request: NextRequest) {
 
   const caminho = request.nextUrl.pathname;
   const ehPublica = PUBLICAS.some((p) => caminho === p || caminho.startsWith(`${p}/`));
+
+  // Rota de API nunca é redirecionada: cada handler confere o login por conta
+  // própria e responde 401 em JSON. Redirecionar aqui devolveria o HTML da
+  // tela de entrada, e o `fetch` do cliente quebraria ao tentar ler o JSON.
+  if (caminho.startsWith("/api/")) {
+    return resposta;
+  }
 
   if (!user && !ehPublica) {
     const url = request.nextUrl.clone();
