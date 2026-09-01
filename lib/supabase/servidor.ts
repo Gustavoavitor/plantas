@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { chavePublicaSupabase, urlSupabase } from "./config";
 
 /**
  * Cliente Supabase para Server Components, Server Actions e Route Handlers.
@@ -10,8 +11,8 @@ export async function criarClienteServidor() {
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    urlSupabase(),
+    chavePublicaSupabase(),
     {
       cookies: {
         getAll() {
@@ -38,10 +39,15 @@ export async function criarClienteServidor() {
  * Nunca importe isto em código que roda no navegador.
  */
 export function criarClienteAdmin() {
-  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!chave) throw new Error("SUPABASE_SERVICE_ROLE_KEY não configurada");
+  // SUPABASE_SECRET_KEY é o nome que a integração Supabase–Vercel usa.
+  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+  if (!chave) {
+    throw new Error(
+      "Defina SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_SECRET_KEY) nas variáveis de ambiente.",
+    );
+  }
 
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, chave, {
+  return createClient(urlSupabase(), chave, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

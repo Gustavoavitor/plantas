@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { chavePublicaSupabase, urlSupabase } from "@/lib/supabase/config";
 
 /** Telas que podem ser abertas sem login. */
 const PUBLICAS = ["/entrar", "/auth", "/manifest.webmanifest", "/sw.js"];
@@ -12,9 +13,22 @@ const PUBLICAS = ["/entrar", "/auth", "/manifest.webmanifest", "/sw.js"];
 export async function proxy(request: NextRequest) {
   let resposta = NextResponse.next({ request });
 
+  // Sem as variáveis do Supabase não há sessão para renovar. Em vez de
+  // derrubar toda requisição com um 500 opaco, deixamos passar: a página
+  // dá um erro legível e /api/diagnostico continua acessível para dizer
+  // exatamente qual variável está faltando.
+  let url: string;
+  let chave: string;
+  try {
+    url = urlSupabase();
+    chave = chavePublicaSupabase();
+  } catch {
+    return resposta;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    chave,
     {
       cookies: {
         getAll() {
