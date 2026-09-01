@@ -186,9 +186,10 @@ Vercel Cron (1×/dia)  →  GET /api/cron/lembretes
 - Entram no aviso: rega atrasada, rega de hoje, planta nunca regada, e adubação
   atrasada quando não está pausada.
 - O horário está em `vercel.json` (`0 11 * * *` = 8h de Brasília). O campo
-  `perfis.hora_lembrete` existe no banco mas **não é usado**: o plano Hobby da
-  Vercel não permite cron de hora em hora, que seria necessário para respeitar
-  o horário de cada pessoa.
+  `perfis.hora_lembrete` existe no banco mas **não é usado**: com um disparo
+  por dia não há como respeitar o horário de cada pessoa. Fazer isso exigiria
+  um cron de hora em hora que só avisasse quem marcou aquela hora — verifique
+  antes o limite de frequência do seu plano em *Settings → Cron Jobs*.
 - Inscrição expirada (app desinstalado, permissão revogada) devolve 404 ou 410
   e é apagada sozinha do banco.
 
