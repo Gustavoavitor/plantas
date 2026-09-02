@@ -254,7 +254,7 @@ export function ordenarPorUrgencia<T extends Pick<Planta, "ultima_rega" | "inter
 export function frasePendencia(s: StatusCuidado): string {
   switch (s.status) {
     case "sem_registro":
-      return "Sem registro de rega";
+      return "Sem registro";
     case "atrasada": {
       const d = Math.abs(s.diasRestantes!);
       return d === 1 ? "Atrasada 1 dia" : `Atrasada ${d} dias`;

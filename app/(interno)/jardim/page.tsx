@@ -4,7 +4,7 @@ import CartaoPlanta from "@/components/CartaoPlanta";
 import ClimaAgora from "@/components/Clima";
 import { IconeFlor, IconeMais } from "@/components/Icones";
 import { estacaoDoAno, ordenarPorUrgencia, statusRega } from "@/lib/cuidados";
-import { criarClienteServidor } from "@/lib/supabase/servidor";
+import { criarClienteServidor, usuarioAtual } from "@/lib/supabase/servidor";
 import { tituloDoJardim } from "@/lib/titulo";
 import type { Planta } from "@/lib/tipos";
 
@@ -20,6 +20,7 @@ const SAUDACAO_ESTACAO = {
 
 export default async function PaginaJardim() {
   const supabase = await criarClienteServidor();
+  const user = await usuarioAtual();
 
   const [{ data }, { data: perfil }] = await Promise.all([
     supabase
@@ -27,9 +28,15 @@ export default async function PaginaJardim() {
       .select("*")
       .eq("arquivada", false)
       .order("criado_em", { ascending: false }),
-    // select("*") em vez de nomear colunas: assim a tela não quebra se a
-    // migração dos jardins ainda não tiver rodado.
-    supabase.from("perfis").select("*").maybeSingle(),
+    // O filtro por id é explícito de propósito: `maybeSingle` falha se vier
+    // mais de uma linha, e bastou uma segunda pessoa criar conta para o
+    // título cair no genérico. Não se apoia no RLS para escolher a linha.
+    // select("*") mantém a tela de pé se a migração dos jardins não rodou.
+    supabase
+      .from("perfis")
+      .select("*")
+      .eq("id", user?.id ?? "")
+      .maybeSingle(),
   ]);
 
   const titulo = tituloDoJardim(perfil);
@@ -56,12 +63,14 @@ export default async function PaginaJardim() {
           </Link>
         </div>
 
-        {/* O subtítulo fica fora da linha do título: a fonte manuscrita tem
-            hastes que passam da caixa de texto e cortariam a frase abaixo. */}
-        <div className="flex items-center gap-3">
-          <IconeFlor className="h-9 w-9 shrink-0 text-folha" />
-          <h1 className="titulo-jardim min-w-0">{titulo}</h1>
-        </div>
+        {/* A flor é inline dentro do título e alinhada pela linha de base,
+            não por flexbox: assim ela acompanha a letra mesmo com as métricas
+            estranhas da fonte manuscrita, que variam entre iOS e Android.
+            O subtítulo fica fora do <h1> porque as hastes passam da caixa. */}
+        <h1 className="titulo-jardim">
+          <IconeFlor className="mr-[0.3em] inline-block h-[1em] w-[1em] shrink-0 align-[-0.15em] text-folha" />
+          {titulo}
+        </h1>
         <p className="mt-2 text-sm text-suave">{SAUDACAO_ESTACAO[estacaoDoAno()]}</p>
       </header>
 

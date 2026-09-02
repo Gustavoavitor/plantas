@@ -14,7 +14,13 @@ export default async function PaginaAjustes() {
   const user = await usuarioAtual();
   const supabase = await criarClienteServidor();
 
-  const { data: perfil } = await supabase.from("perfis").select("*").maybeSingle();
+  // Filtra pelo id em vez de confiar no RLS para sobrar uma linha só:
+  // `maybeSingle` falha se vier mais de uma.
+  const { data: perfil } = await supabase
+    .from("perfis")
+    .select("*")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
 
   const { data: arquivadasBrutas } = await supabase
     .from("plantas")

@@ -1,14 +1,8 @@
 import Link from "next/link";
-import { frasePendencia, statusRega } from "@/lib/cuidados";
+import { statusRega } from "@/lib/cuidados";
 import type { Planta } from "@/lib/tipos";
 import BotaoRegar from "./BotaoRegar";
-
-const CORES = {
-  atrasada: "border-alerta/30 bg-alerta-clara text-alerta",
-  hoje: "border-atencao/30 bg-atencao-clara text-atencao",
-  sem_registro: "border-borda bg-papel text-suave",
-  em_dia: "border-borda bg-papel text-suave",
-} as const;
+import EtiquetaRega from "./EtiquetaRega";
 
 /** "lírio-da-paz" como apelido e como nome comum é repetição inútil no card. */
 function mesmoTexto(a: string | null, b: string) {
@@ -54,10 +48,8 @@ export default function CartaoPlanta({ planta }: { planta: Planta }) {
             {mostrarSecundario && (
               <p className="truncate text-sm text-suave">{secundario}</p>
             )}
-            <span
-              className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${CORES[status.status]}`}
-            >
-              {frasePendencia(status)}
+            <span className="mt-1.5 block">
+              <EtiquetaRega planta={planta} />
             </span>
           </div>
         </Link>

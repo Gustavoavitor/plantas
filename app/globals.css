@@ -18,6 +18,11 @@
   --atencao: #a8791f;
   --atencao-clara: #f9f1dd;
 
+  /* Azul de água, para a contagem até a rega. */
+  --agua: #3d7ea8;
+  --agua-clara: #e4f1fa;
+  --agua-barra: #7fbde8;
+
   /* Violeta elétrico da referência. Entra só como brilho de fundo e no
      realce da navegação — o verde continua sendo a cor do app. */
   --violeta: #6d3bff;
@@ -45,6 +50,10 @@
     --atencao: #d9b45c;
     --atencao-clara: #2d2718;
 
+    --agua: #93cbf0;
+    --agua-clara: #15252f;
+    --agua-barra: #5fa8d8;
+
     --violeta: #7c4dff;
     --violeta-claro: #b9c7ff;
     /* No escuro o brilho aparece mais, como na foto de referência. */
@@ -71,6 +80,9 @@
   --color-atencao-clara: var(--atencao-clara);
   --color-violeta: var(--violeta);
   --color-violeta-clara: var(--violeta-claro);
+  --color-agua: var(--agua);
+  --color-agua-clara: var(--agua-clara);
+  --color-agua-barra: var(--agua-barra);
 
   /* rokkitt tem só os pesos 400 e 700: 500 e 600 caem para o mais próximo. */
   --font-sans: "rokkitt", var(--font-geist-sans), ui-serif, Georgia, serif;
