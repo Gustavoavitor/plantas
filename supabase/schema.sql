@@ -33,9 +33,21 @@ drop policy if exists "perfil proprio - ler" on perfis;
 drop policy if exists "perfil proprio - criar" on perfis;
 drop policy if exists "perfil proprio - editar" on perfis;
 
-create policy "perfil proprio - ler"    on perfis for select using (auth.uid() = id);
-create policy "perfil proprio - criar"  on perfis for insert with check (auth.uid() = id);
-create policy "perfil proprio - editar" on perfis for update using (auth.uid() = id);
+-- `to authenticated` + `(select auth.uid())` de propósito: o `select`
+-- avalia a função uma vez por consulta em vez de uma vez por linha, e o
+-- alvo explícito evita a política valer para papéis que não deveriam.
+create policy "perfil proprio - ler" on perfis for select
+  to authenticated using ((select auth.uid()) = id);
+
+create policy "perfil proprio - criar" on perfis for insert
+  to authenticated with check ((select auth.uid()) = id);
+
+-- UPDATE precisa de USING e WITH CHECK: sem o segundo, dava para reatribuir
+-- a linha a outra pessoa.
+create policy "perfil proprio - editar" on perfis for update
+  to authenticated
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
 
 -- Cria o perfil sozinho quando alguem entra pela primeira vez
 create or replace function public.criar_perfil_novo_usuario()
